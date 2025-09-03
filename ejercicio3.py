@@ -10,7 +10,6 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def encontrar_puntos_contacto(contorno, tol_altura=5):
-    """Encuentra puntos de contacto basado en proximidad al mínimo de Y."""
     y_min = np.min(contorno[:, 0])
     puntos_base_idx = np.where(np.abs(contorno[:, 0] - y_min) < tol_altura)[0]
 
@@ -24,7 +23,6 @@ def encontrar_puntos_contacto(contorno, tol_altura=5):
     return idx_izq, idx_der
 
 def calcular_perimetro(contorno, escala):
-    """Calcula perímetro usando interpolación cúbica para contornos curvos."""
     try:
         t = np.linspace(0, 1, len(contorno))
         cs_x = CubicSpline(t, contorno[:, 1])
@@ -40,15 +38,13 @@ def calcular_perimetro(contorno, escala):
         return np.sum(diffs) * escala
 
 def validar_energia(factor_esparcimiento, velocidad, densidad, altura_max, diametro_base):
-    """Valida valores y calcula energía cinética aproximada usando factor de esparcimiento."""
     if np.isnan(factor_esparcimiento) or abs(velocidad) > 100:
         return np.nan
-    # Aproximamos el volumen en base a geometría cilíndrica simplificada
+
     volumen_aprox = np.pi * (diametro_base / 2) ** 2 * altura_max
     return 0.5 * densidad * volumen_aprox * velocidad ** 2
 
 def calcular_propiedades_geometricas(df, escala=4.13e-6, densidad=7380):
-    """Calcula propiedades geométricas con las mejoras críticas."""
     required_cols = ['Contorno_x', 'Contorno_y', 'Tiempo (s)', 'Centroide_y (µm)', 'Centroide_x (µm)']
     if not all(col in df.columns for col in required_cols):
         raise ValueError(f"DataFrame no contiene columnas requeridas: {required_cols}")
@@ -69,11 +65,9 @@ def calcular_propiedades_geometricas(df, escala=4.13e-6, densidad=7380):
         try:
             contorno_x = np.array(json.loads(row['Contorno_x']))
             contorno_y = np.array(json.loads(row['Contorno_y']))
-            centro_x = row['Centroide_x (µm)']
 
             contorno = np.column_stack((contorno_y, contorno_x))
 
-            # Puntos de contacto
             idx_izq, idx_der = encontrar_puntos_contacto(contorno)
             if idx_izq > idx_der:
                 idx_izq, idx_der = idx_der, idx_izq
@@ -81,22 +75,17 @@ def calcular_propiedades_geometricas(df, escala=4.13e-6, densidad=7380):
             contorno_izq = contorno[idx_izq:idx_der + 1]
             contorno_der = np.vstack((contorno[idx_der:], contorno[:idx_izq + 1]))
 
-            # Perímetros
             perim_izq = calcular_perimetro(contorno_izq, escala_metros)
             perim_der = calcular_perimetro(contorno_der, escala_metros)
             simetria = 1 - abs(perim_izq - perim_der) / max(perim_izq, perim_der)
 
-            # Geometría
             altura_max = np.max(contorno[:, 0]) * escala_metros
             diametro_base = (np.max(contorno[:, 1]) - np.min(contorno[:, 1])) * escala_metros
 
-            # Factor de Esparcimiento (Excel del Ejercicio2)
             factor_esp = row['Factor_esparcimiento']
 
-            # Energía cinética
             energia = validar_energia(factor_esp, velocidades[idx], densidad, altura_max, diametro_base)
 
-            # Guardar
             resultados['Perimetro_izq (m)'].append(perim_izq)
             resultados['Perimetro_der (m)'].append(perim_der)
             resultados['Simetria'].append(simetria)
@@ -121,7 +110,6 @@ def graficar_resultados_ej3(df):
         fig, axs = plt.subplots(2, 2, figsize=(15, 12))
         fig.suptitle('Análisis de Propiedades Geométricas - Ejercicio 3', fontsize=16)
 
-        # 1. Perímetros y simetría
         axs[0, 0].plot(df['Tiempo (s)'], df['Perimetro_izq (m)'], 'b-', label='Perímetro izquierdo', alpha=0.8)
         axs[0, 0].plot(df['Tiempo (s)'], df['Perimetro_der (m)'], 'r--', label='Perímetro derecho', alpha=0.8)
         axs[0, 0].set_xlabel('Tiempo (s)')
@@ -137,14 +125,12 @@ def graficar_resultados_ej3(df):
         lines2, labels2 = ax02.get_legend_handles_labels()
         axs[0, 0].legend(lines + lines2, labels + labels2, loc='upper left')
 
-        # 2. Factor de esparcimiento (desde Excel)
         axs[0, 1].plot(df['Tiempo (s)'], df['Factor_esparcimiento'], 'm-', alpha=0.8)
         axs[0, 1].set_xlabel('Tiempo (s)')
         axs[0, 1].set_ylabel('Factor de esparcimiento')
         axs[0, 1].set_title('Relación diámetro base / altura máxima')
         axs[0, 1].grid(True, alpha=0.3)
 
-        # 3. Energía cinética y velocidad
         axs[1, 0].plot(df['Tiempo (s)'], df['Energia_cinetica (J)'], 'c-', label='Energía cinética', alpha=0.8)
         axs[1, 0].set_xlabel('Tiempo (s)')
         axs[1, 0].set_ylabel('Energía cinética (J)')
@@ -158,7 +144,6 @@ def graficar_resultados_ej3(df):
         lines2, labels2 = ax10.get_legend_handles_labels()
         axs[1, 0].legend(lines + lines2, labels + labels2, loc='upper left')
 
-        # 4. Altura máxima y diámetro base
         axs[1, 1].plot(df['Tiempo (s)'], df['Altura_maxima (m)'], 'orange', label='Altura máxima', alpha=0.8)
         axs[1, 1].set_xlabel('Tiempo (s)')
         axs[1, 1].set_ylabel('Altura máxima (m)')
@@ -181,7 +166,6 @@ def graficar_resultados_ej3(df):
         print(f"Error al generar gráficos: {str(e)}")
 
 def generar_informe3(carpeta_imagenes=None, num_imagenes=126):
-    """Función principal optimizada para el ejercicio 3."""
     print("\n=== EJERCICIO 3: Análisis de propiedades geométricas ===\n")
     try:
         if carpeta_imagenes and os.path.exists(carpeta_imagenes):
@@ -205,7 +189,6 @@ def generar_informe3(carpeta_imagenes=None, num_imagenes=126):
         print(f"Simetría promedio: {df['Simetria'].mean():.3f} ± {df['Simetria'].std():.3f}")
         print(f"Factor de esparcimiento promedio: {df['Factor_esparcimiento'].mean():.3f}")
 
-        # Análisis de conservación de energía
         energia_valida = df['Energia_cinetica (J)'].dropna()
         if len(energia_valida) > 1:
             energia_inicial = energia_valida.iloc[0]

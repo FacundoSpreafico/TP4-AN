@@ -13,77 +13,53 @@ from openpyxl.styles import Font, Alignment, PatternFill
 import tempfile
 
 def procesar_imagen(ruta_imagen, escala=4.13, referencia_pixel=(0, 131)):
-    """Procesa una imagen individual y extrae su contorno y centroide.
-
-    Args:
-        ruta_imagen (str): Ruta a la imagen a procesar
-        escala (float): Factor de conversión de píxeles a micrómetros (µm/px)
-    referencia_pixel (tuple): (x_ref, y_ref) píxel que define la línea y=0
-
-    Returns:
-        tuple: (contorno_µm, (centro_x, centro_y), ruta_imagen_procesada)
-               o (None, None, None) si hay error o la gota no está correctamente
-               identificada por encima de la referencia
-    """
     try:
-        # Validar parámetros de entrada
         if escala <= 0:
             raise ValueError("La escala debe ser un valor positivo")
 
         if not os.path.exists(ruta_imagen):
             raise FileNotFoundError(f"Imagen no encontrada: {ruta_imagen}")
 
-        # 1. Cargar imagen en escala de grises
         imagen = cv2.imread(ruta_imagen, cv2.IMREAD_GRAYSCALE)
         if imagen is None:
             raise ValueError(f"No se pudo cargar la imagen {ruta_imagen}")
 
-        # 2. Preprocesamiento - Suavizado Gaussiano para reducir ruido
+        # Suavizado Gaussiano para reducir ruido
         imagen_suavizada = cv2.GaussianBlur(imagen, (5, 5), 0)
 
-        # 3. Binarización - Método de Otsu para umbral automático
+        # Binarización (Método de Otsu para Umbral Automático)
         thresh = threshold_otsu(imagen_suavizada)
         imagen_binaria = imagen_suavizada > thresh
 
-        # 4. Detección de contornos usando marching squares
+        # Detección de Contornos - Marching Squares
         contornos = measure.find_contours(imagen_binaria, 0.5)
         if not contornos:
             # No se encontraron contornos útiles
             return None, None, None
 
-        # Filtrar contornos descartando aquellos que estén principalmente bajo la referencia
         x_ref, y_ref = referencia_pixel
         contornos_arriba = [c for c in contornos if np.mean(c[:, 0]) < (y_ref + 5)]
 
         if len(contornos_arriba) == 0:
-            # Si no hay contornos claramente arriba, tomar el más alto (menor y medio)
             contorno = min(contornos, key=lambda x: np.mean(x[:, 0]))
         else:
-            # Preferir el contorno más grande entre los que están arriba
             contorno = max(contornos_arriba, key=lambda x: len(x))
 
-        # 5. Filtrar puntos por encima de la línea de referencia (el reflejo está debajo)
         mask_arriba = contorno[:, 0] < y_ref
         contorno_filtrado = contorno[mask_arriba]
 
-        # Si la porción por encima de la referencia es muy pequeña, considerar la imagen inválida
         if contorno_filtrado.shape[0] < 10:
             return None, None, None
 
-        # 6. Re-centrar coordenadas: definir origen en (x_ref, y_ref), con y positivo hacia arriba
-        # contorno_filtrado columnas: 0->y(px), 1->x(px)
         contorno_px = np.zeros_like(contorno_filtrado)
         contorno_px[:, 1] = contorno_filtrado[:, 1] - x_ref 
         contorno_px[:, 0] = y_ref - contorno_filtrado[:, 0]
 
-        # 7. Convertir a micrómetros
         contorno_µm = contorno_px * escala
 
-        # 8. Calcular centroide en µm
         centro_x = float(np.mean(contorno_µm[:, 1]))
         centro_y = float(np.mean(contorno_µm[:, 0]))
 
-        # 9. Visualización para diagnóstico (guardar imagen temporal)
         fig, ax = plt.subplots(figsize=(6, 6))
         ax.imshow(imagen, cmap='gray')
         ax.plot(contorno_filtrado[:, 1], contorno_filtrado[:, 0], 'r-', linewidth=2, label='Contorno')
@@ -108,17 +84,6 @@ def procesar_imagen(ruta_imagen, escala=4.13, referencia_pixel=(0, 131)):
 
 
 def procesar_todas_imagenes(carpeta_imagenes, num_imagenes=126, escala=4.13):
-    """Procesa todas las imágenes y recolecta todos los datos con validación mejorada.
-
-    Args:
-        carpeta_imagenes (str): Ruta a la carpeta con imágenes
-        num_imagenes (int): Número total de imágenes a procesar
-        escala (float): Factor de conversión píxeles a micrómetros
-
-    Returns:
-        pd.DataFrame: DataFrame con todos los datos procesados
-    """
-    # Validación inicial
     if not os.path.isdir(carpeta_imagenes):
         raise ValueError(f"La carpeta {carpeta_imagenes} no existe")
 
@@ -126,19 +91,16 @@ def procesar_todas_imagenes(carpeta_imagenes, num_imagenes=126, escala=4.13):
         raise ValueError("El número de imágenes debe ser positivo")
 
     datos = []
-    fps = 20538  # Frames por segundo según enunciado
+    fps = 20538  # FPS
     tiempos = np.arange(num_imagenes) / fps
 
-    # Procesar con barra de progreso
     for i in tqdm(range(1, num_imagenes + 1), desc="Procesando imágenes"):
         num_str = f"{i:04d}"
         nombre_imagen = f"TP4_Gota_{num_str}.jpg"
         ruta_imagen = os.path.join(carpeta_imagenes, nombre_imagen)
 
-        # Procesar imagen
         contorno, centro, img_path = procesar_imagen(ruta_imagen, escala)
 
-        # Preparar datos para el DataFrame
         dato_imagen = {
             'Imagen': nombre_imagen,
             'Tiempo (s)': tiempos[i - 1],
@@ -165,17 +127,7 @@ def procesar_todas_imagenes(carpeta_imagenes, num_imagenes=126, escala=4.13):
     return pd.DataFrame(datos)
 
 def exportar_a_excel(df, nombre_archivo='resultados_completos.xlsx'):
-    """Exporta todos los datos a un archivo Excel en una sola hoja con mejor formato.
-
-    Args:
-        df (pd.DataFrame): DataFrame con los datos a exportar
-        nombre_archivo (str): Nombre del archivo Excel de salida
-
-    Returns:
-        bool: True si la exportación fue exitosa
-    """
     try:
-        # Validar DataFrame
         if df.empty:
             raise ValueError("El DataFrame está vacío")
 
@@ -191,7 +143,6 @@ def exportar_a_excel(df, nombre_archivo='resultados_completos.xlsx'):
         header_style = Font(bold=True, color="FFFFFF")
         fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
 
-        # Escribir encabezado
         columnas = ['Imagen', 'Tiempo (s)', 'Centroide_x (µm)', 'Centroide_y (µm)',
                     'N_puntos_contorno', 'Contorno_x', 'Contorno_y']
 
@@ -217,7 +168,6 @@ def exportar_a_excel(df, nombre_archivo='resultados_completos.xlsx'):
         for col_letter, width in column_widths.items():
             ws.column_dimensions[col_letter].width = width
 
-        # Aplicar formato numérico y alineación
         for row in ws.iter_rows(min_row=2):
             for cell in row:
                 cell.alignment = Alignment(horizontal='center')
@@ -236,7 +186,6 @@ def exportar_a_excel(df, nombre_archivo='resultados_completos.xlsx'):
         return False
 
 def graficar_centroides_vs_tiempo(df, nombre_archivo='centroides_vs_tiempo.png'):
-    """Grafica la posición X e Y del centroide con estilo mejorado."""
     try:
         plt.figure(figsize=(14, 6))
 
@@ -275,11 +224,9 @@ def graficar_centroides_vs_tiempo(df, nombre_archivo='centroides_vs_tiempo.png')
 
 
 def generar_informe1(carpeta_imagenes, num_imagenes=126):
-    """Función principal mejorada con manejo de errores robusto."""
     print("\n--- Ejercicio 1: Procesamiento de imágenes ---")
 
     try:
-        # Validación inicial
         if not os.path.exists(carpeta_imagenes):
             raise FileNotFoundError(f"La carpeta '{carpeta_imagenes}' no existe")
 
@@ -298,13 +245,11 @@ def generar_informe1(carpeta_imagenes, num_imagenes=126):
         print(f"- Centroide X promedio: {df['Centroide_x (µm)'].mean():.2f} µm")
         print(f"- Centroide Y promedio: {df['Centroide_y (µm)'].mean():.2f} µm")
 
-        # Exportar resultados
         print("\nExportando resultados a Excel...")
         if exportar_a_excel(df):
             print("\nGenerando gráficos de análisis...")
             graficar_centroides_vs_tiempo(df)
 
-            # Gráfico adicional de trayectoria del centroide
             plt.figure(figsize=(8, 6))
             plt.plot(df['Centroide_x (µm)'], df['Centroide_y (µm)'],
                      'b-', linewidth=1.5, label='Trayectoria')
