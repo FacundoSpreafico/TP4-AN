@@ -237,7 +237,6 @@ def graficar_resultados(df_angulos):
         avg_der = df_angulos['Angulo_der'].mean()
         ax1.axhline(y=avg_izq, color='b', linestyle='--', alpha=0.5)
         ax1.axhline(y=avg_der, color='r', linestyle='--', alpha=0.5)
-        # Agregar anotaciones con los promedios
         ax1.text(0.02, 0.98, f'Prom. Izq: {avg_izq:.1f}°',
                 transform=ax1.transAxes, fontsize=9, verticalalignment='top', color='blue')
         ax1.text(0.02, 0.93, f'Prom. Der: {avg_der:.1f}°',
@@ -283,7 +282,7 @@ def graficar_resultados(df_angulos):
     plt.close(fig)
 
 def generar_informe2():
-    print("\n--- Ejercicio 2: Análisis de ángulos de contacto ---")
+    print("\n\n=== EJERCICIO 2: Análisis de ángulos de contacto ===")
     try:
         if not os.path.exists('resultados_completos.xlsx'):
             raise FileNotFoundError("No se encontró el archivo 'resultados_completos.xlsx'")
@@ -293,16 +292,14 @@ def generar_informe2():
         if not all(col in df.columns for col in required_cols):
             raise ValueError(f"El archivo Excel no contiene las columnas requeridas: {required_cols}")
 
-        print("Procesando contornos...")
         df_ajustes = ajustar_contornos(df, grado_polinomio=3, suavizado_spline=1.0)
 
-        print("Calculando ángulos...")
         df_angulos = calcular_angulo_contacto(df_ajustes, altura_contacto=50)
 
         df_angulos.to_excel('resultados_completos2.xlsx', index=False)
         graficar_resultados(df_angulos)
 
-        print("\n--- Resultados ---")
+        print("\n====== Resultados ======")
         if not df_angulos.empty:
             print(
                 f"Ángulos izquierdos: μ = {df_angulos['Angulo_izq'].mean():.1f}° ± {df_angulos['Angulo_izq'].std():.1f}°")
@@ -311,7 +308,7 @@ def generar_informe2():
 
             if 'Tipo_angulo' in df_angulos:
                 counts = df_angulos['Tipo_angulo'].value_counts(normalize=True)
-                print(f"\nDistribución de tipos de ángulo:")
+                print(f"\n====== Distribución de tipos de ángulo ======")
                 for tipo, porcentaje in counts.items():
                     print(f"- {tipo}: {porcentaje:.1%}")
 

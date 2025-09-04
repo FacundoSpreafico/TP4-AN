@@ -27,14 +27,13 @@ def procesar_imagen(ruta_imagen, escala=4.13, referencia_pixel=(0, 131)):
         # Suavizado Gaussiano para reducir ruido
         imagen_suavizada = cv2.GaussianBlur(imagen, (5, 5), 0)
 
-        # Binarización (Método de Otsu para Umbral Automático)
+        # Binarización (Metodo de Otsu para Umbral Automático)
         thresh = threshold_otsu(imagen_suavizada)
         imagen_binaria = imagen_suavizada > thresh
 
         # Detección de Contornos - Marching Squares
         contornos = measure.find_contours(imagen_binaria, 0.5)
         if not contornos:
-            # No se encontraron contornos útiles
             return None, None, None
 
         x_ref, y_ref = referencia_pixel
@@ -131,8 +130,7 @@ def exportar_a_excel(df, nombre_archivo='resultados_completos.xlsx'):
         if df.empty:
             raise ValueError("El DataFrame está vacío")
 
-        required_cols = ['Imagen', 'Tiempo (s)', 'Centroide_x (µm)', 'Centroide_y (µm)',
-                         'N_puntos_contorno', 'Contorno_x', 'Contorno_y']
+        required_cols = ['Imagen', 'Tiempo (s)', 'Centroide_x (µm)', 'Centroide_y (µm)', 'N_puntos_contorno', 'Contorno_x', 'Contorno_y']
         if not all(col in df.columns for col in required_cols):
             raise ValueError(f"DataFrame no contiene columnas requeridas: {required_cols}")
 
@@ -143,8 +141,7 @@ def exportar_a_excel(df, nombre_archivo='resultados_completos.xlsx'):
         header_style = Font(bold=True, color="FFFFFF")
         fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
 
-        columnas = ['Imagen', 'Tiempo (s)', 'Centroide_x (µm)', 'Centroide_y (µm)',
-                    'N_puntos_contorno', 'Contorno_x', 'Contorno_y']
+        columnas = ['Imagen', 'Tiempo (s)', 'Centroide_x (µm)', 'Centroide_y (µm)', 'N_puntos_contorno', 'Contorno_x', 'Contorno_y']
 
         for col_num, col_name in enumerate(columnas, 1):
             cell = ws.cell(row=1, column=col_num, value=col_name)
@@ -171,7 +168,7 @@ def exportar_a_excel(df, nombre_archivo='resultados_completos.xlsx'):
         for row in ws.iter_rows(min_row=2):
             for cell in row:
                 cell.alignment = Alignment(horizontal='center')
-                if cell.column_letter == 'B':  # Tiempo (s)
+                if cell.column_letter == 'B':
                     cell.number_format = '0.00000'
                 elif cell.column_letter in ['C', 'D', 'E']:
                     cell.number_format = '0.00'
@@ -189,25 +186,20 @@ def graficar_centroides_vs_tiempo(df, nombre_archivo='centroides_vs_tiempo.png')
     try:
         plt.figure(figsize=(14, 6))
 
-        # Configuración de estilo
         plt.style.use('seaborn-v0_8')
         plt.rcParams['axes.grid'] = True
         plt.rcParams['grid.alpha'] = 0.3
 
-        # Gráfico para X
         plt.subplot(1, 2, 1)
-        plt.plot(df['Tiempo (s)'], df['Centroide_x (µm)'], 'b-', linewidth=2,
-                 label='Posición X')
+        plt.plot(df['Tiempo (s)'], df['Centroide_x (µm)'], 'b-', linewidth=2, label='Posición X')
         plt.xlabel('Tiempo (s)', fontsize=12)
         plt.ylabel('Posición X (µm)', fontsize=12)
         plt.title('Evolución de la posición X del centroide', fontsize=14, pad=20)
         plt.grid(True, linestyle='--', alpha=0.5)
         plt.legend(fontsize=10)
 
-        # Gráfico para Y
         plt.subplot(1, 2, 2)
-        plt.plot(df['Tiempo (s)'], df['Centroide_y (µm)'], 'r-', linewidth=2,
-                 label='Posición Y')
+        plt.plot(df['Tiempo (s)'], df['Centroide_y (µm)'], 'r-', linewidth=2, label='Posición Y')
         plt.xlabel('Tiempo (s)', fontsize=12)
         plt.ylabel('Posición Y (µm)', fontsize=12)
         plt.title('Evolución de la posición Y del centroide', fontsize=14, pad=20)
@@ -224,7 +216,7 @@ def graficar_centroides_vs_tiempo(df, nombre_archivo='centroides_vs_tiempo.png')
 
 
 def generar_informe1(carpeta_imagenes, num_imagenes=126):
-    print("\n--- Ejercicio 1: Procesamiento de imágenes ---")
+    print("\n=== EJERCICIO 1: Procesamiento de imágenes ===")
 
     try:
         if not os.path.exists(carpeta_imagenes):
@@ -237,7 +229,7 @@ def generar_informe1(carpeta_imagenes, num_imagenes=126):
         df = procesar_todas_imagenes(carpeta_imagenes, num_imagenes)
 
         if df.empty:
-            raise ValueError("No se pudieron procesar imágenes (¿formato incorrecto?)")
+            raise ValueError("No se pudieron procesar imágenes")
 
         # Análisis de resultados
         print("\nResumen estadístico:")
@@ -245,14 +237,11 @@ def generar_informe1(carpeta_imagenes, num_imagenes=126):
         print(f"- Centroide X promedio: {df['Centroide_x (µm)'].mean():.2f} µm")
         print(f"- Centroide Y promedio: {df['Centroide_y (µm)'].mean():.2f} µm")
 
-        print("\nExportando resultados a Excel...")
         if exportar_a_excel(df):
-            print("\nGenerando gráficos de análisis...")
             graficar_centroides_vs_tiempo(df)
 
             plt.figure(figsize=(8, 6))
-            plt.plot(df['Centroide_x (µm)'], df['Centroide_y (µm)'],
-                     'b-', linewidth=1.5, label='Trayectoria')
+            plt.plot(df['Centroide_x (µm)'], df['Centroide_y (µm)'], 'b-', linewidth=1.5, label='Trayectoria')
             plt.xlabel('Posición X (µm)', fontsize=12)
             plt.ylabel('Posición Y (µm)', fontsize=12)
             plt.title('Trayectoria del centroide de la gota', fontsize=14)
@@ -261,8 +250,6 @@ def generar_informe1(carpeta_imagenes, num_imagenes=126):
             plt.tight_layout()
             plt.savefig('trayectoria_centroide.png', dpi=300)
             plt.close()
-
-            print("\nProceso completado exitosamente!")
             return True
         else:
             print("\nProceso completado con errores.")

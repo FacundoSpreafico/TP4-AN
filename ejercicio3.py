@@ -160,19 +160,16 @@ def graficar_resultados_ej3(df):
         plt.tight_layout()
         plt.savefig('resultados_ejercicio3.png', dpi=300, bbox_inches='tight')
         plt.close()
-        print("Gráficos del ejercicio 3 generados en 'resultados_ejercicio3.png'")
 
     except Exception as e:
         print(f"Error al generar gráficos: {str(e)}")
 
 def generar_informe3(carpeta_imagenes=None, num_imagenes=126):
-    print("\n=== EJERCICIO 3: Análisis de propiedades geométricas ===\n")
+    print("\n\n=== EJERCICIO 3: Análisis de propiedades geométricas ===")
     try:
         if carpeta_imagenes and os.path.exists(carpeta_imagenes):
-            print("Procesando imágenes desde la carpeta...")
             df1 = procesar_todas_imagenes(carpeta_imagenes, num_imagenes)
         elif os.path.exists('resultados_completos.xlsx') and os.path.exists('resultados_completos2.xlsx'):
-            print("Cargando datos desde Excel (ejercicio 1 y 2)...")
             df1 = pd.read_excel('resultados_completos.xlsx', sheet_name='Datos Completos')
             df2 = pd.read_excel('resultados_completos2.xlsx')
             df1 = pd.merge(df1, df2[['Imagen', 'Tiempo (s)', 'Factor_esparcimiento']], on=['Imagen', 'Tiempo (s)'], how='inner')
@@ -182,12 +179,11 @@ def generar_informe3(carpeta_imagenes=None, num_imagenes=126):
         if df1.empty:
             raise ValueError("DataFrame vacío - no hay datos válidos")
 
-        print("Calculando propiedades geométricas mejoradas...")
         df = calcular_propiedades_geometricas(df1)
 
-        print("\n--- RESULTADOS PRINCIPALES ---")
+        print("\n====== Resultados principales ======")
         print(f"Simetría promedio: {df['Simetria'].mean():.3f} ± {df['Simetria'].std():.3f}")
-        print(f"Factor de esparcimiento promedio: {df['Factor_esparcimiento'].mean():.3f}")
+        print(f"Factor de Esparcimiento promedio: {df['Factor_esparcimiento'].mean():.3f}")
 
         energia_valida = df['Energia_cinetica (J)'].dropna()
         if len(energia_valida) > 1:
@@ -195,19 +191,18 @@ def generar_informe3(carpeta_imagenes=None, num_imagenes=126):
             energia_final = energia_valida.iloc[-1]
             perdida_porcentual = 100 * (energia_inicial - energia_final) / energia_inicial
 
-            print(f"\n--- ANÁLISIS ENERGÉTICO ---")
+            print(f"\n====== Analisis Energetico ======")
             print(f"Energía cinética inicial: {energia_inicial:.2e} J")
             print(f"Energía cinética final: {energia_final:.2e} J")
             print(f"Pérdida porcentual: {perdida_porcentual:.1f}%")
 
-        print("\nExportando resultados...")
         df.to_excel('resultados_completos3.xlsx', index=False)
 
         graficar_resultados_ej3(df)
 
-        print("\nEJERCICIO 3 COMPLETADO EXITOSAMENTE")
-        print("Resultados guardados en 'resultados_completos3.xlsx'")
-        print("Gráficos guardados en 'resultados_ejercicio3.png'")
+        print("\nResultados guardados en 'resultados_completos3.xlsx'")
+
+        print("\nGráficos guardados en 'resultados_ejercicio3.png'")
 
         return True
 
