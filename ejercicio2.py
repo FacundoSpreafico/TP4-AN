@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import UnivariateSpline
-import pandas as pd  # ¡Esta línea es crítica!
+import pandas as pd
 import json
 import warnings
 from scipy.integrate import simpson as simps
 import os
+from exportar_excel import exportar_ejercicio2_excel
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -296,7 +297,7 @@ def generar_informe2():
 
         df_angulos = calcular_angulo_contacto(df_ajustes, altura_contacto=50)
 
-        df_angulos.to_excel('resultados_completos2.xlsx', index=False)
+        exportar_ejercicio2_excel(df_angulos, 'resultados_completos2.xlsx')
         graficar_resultados(df_angulos)
 
         print("\n====== Resultados ======")

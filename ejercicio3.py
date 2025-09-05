@@ -6,6 +6,7 @@ import pandas as pd
 from scipy.interpolate import CubicSpline
 from ejercicio1 import procesar_todas_imagenes
 import warnings
+from exportar_excel import exportar_ejercicio3_excel
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -196,7 +197,7 @@ def generar_informe3(carpeta_imagenes=None, num_imagenes=126):
             print(f"Energía cinética final: {energia_final:.2e} J")
             print(f"Pérdida porcentual: {perdida_porcentual:.1f}%")
 
-        df.to_excel('resultados_completos3.xlsx', index=False)
+        exportar_ejercicio3_excel(df, 'resultados_completos3.xlsx')
 
         graficar_resultados_ej3(df)
 

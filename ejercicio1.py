@@ -7,9 +7,7 @@ from skimage.filters import threshold_otsu
 import pandas as pd
 from tqdm import tqdm
 import json
-from openpyxl import Workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.styles import Font, Alignment, PatternFill
+from exportar_excel import exportar_ejercicio1_excel
 import tempfile
 
 def procesar_imagen(ruta_imagen, escala=4.13, referencia_pixel=(0, 131)):
@@ -125,63 +123,6 @@ def procesar_todas_imagenes(carpeta_imagenes, num_imagenes=126, escala=4.13):
 
     return pd.DataFrame(datos)
 
-def exportar_a_excel(df, nombre_archivo='resultados_completos.xlsx'):
-    try:
-        if df.empty:
-            raise ValueError("El DataFrame está vacío")
-
-        required_cols = ['Imagen', 'Tiempo (s)', 'Centroide_x (µm)', 'Centroide_y (µm)', 'N_puntos_contorno', 'Contorno_x', 'Contorno_y']
-        if not all(col in df.columns for col in required_cols):
-            raise ValueError(f"DataFrame no contiene columnas requeridas: {required_cols}")
-
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Datos Completos"
-
-        header_style = Font(bold=True, color="FFFFFF")
-        fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
-
-        columnas = ['Imagen', 'Tiempo (s)', 'Centroide_x (µm)', 'Centroide_y (µm)', 'N_puntos_contorno', 'Contorno_x', 'Contorno_y']
-
-        for col_num, col_name in enumerate(columnas, 1):
-            cell = ws.cell(row=1, column=col_num, value=col_name)
-            cell.font = header_style
-            cell.fill = fill
-
-        for row_num, row_data in enumerate(dataframe_to_rows(df[columnas], index=False, header=False), 2):
-            for col_num, value in enumerate(row_data, 1):
-                ws.cell(row=row_num, column=col_num, value=value)
-
-        column_widths = {
-            'A': 20,  # Imagen
-            'B': 12,  # Tiempo
-            'C': 16,  # Centroide X
-            'D': 16,  # Centroide Y
-            'E': 18,  # N_puntos
-            'F': 30,  # Contorno_x
-            'G': 30  # Contorno_y
-        }
-
-        for col_letter, width in column_widths.items():
-            ws.column_dimensions[col_letter].width = width
-
-        for row in ws.iter_rows(min_row=2):
-            for cell in row:
-                cell.alignment = Alignment(horizontal='center')
-                if cell.column_letter == 'B':
-                    cell.number_format = '0.00000'
-                elif cell.column_letter in ['C', 'D', 'E']:
-                    cell.number_format = '0.00'
-
-        wb.save(nombre_archivo)
-
-        print(f"\nArchivo Excel generado exitosamente: {nombre_archivo}")
-        return True
-
-    except Exception as e:
-        print(f"\nError al exportar a Excel: {str(e)}")
-        return False
-
 def graficar_centroides_vs_tiempo(df, nombre_archivo='centroides_vs_tiempo.png'):
     try:
         plt.figure(figsize=(14, 6))
@@ -237,7 +178,7 @@ def generar_informe1(carpeta_imagenes, num_imagenes=126):
         print(f"- Centroide X promedio: {df['Centroide_x (µm)'].mean():.2f} µm")
         print(f"- Centroide Y promedio: {df['Centroide_y (µm)'].mean():.2f} µm")
 
-        if exportar_a_excel(df):
+        if exportar_ejercicio1_excel(df):
             graficar_centroides_vs_tiempo(df)
 
             plt.figure(figsize=(8, 6))
